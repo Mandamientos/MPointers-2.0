@@ -12,6 +12,7 @@
 template <typename T>
 class MPointer {
 private:
+    uint32_t id_;
     static std::unique_ptr<MemoryManager::Stub> stub_;
     static std::shared_ptr<grpc::Channel> channel_;
 
@@ -21,8 +22,6 @@ private:
     void decreaseRefCount();
 
 public:
-
-    uint32_t id_;
 
     MPointer() : id_(-1) {} //pointer without initialization
 
