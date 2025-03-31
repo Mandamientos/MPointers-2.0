@@ -9,11 +9,15 @@
 #include <vector>
 #include <mutex>
 #include <iostream>
+#include <thread>
+#include <chrono>
+#include <atomic>
+
 
 class memoryManager {
 public:
 
-    uint64_t idCount_ = 0;
+    uint32_t idCount_ = 0;
 
     memoryManager(size_t size_mb, std::string dumpFolder_);
     ~memoryManager();
@@ -42,6 +46,11 @@ private:
     std::vector<memoryBlock> blocks_;
     std::mutex mtx_;
     std::string dumpFolder_;
+
+    // Garbage collector thread configuration
+    std::thread gcThread_;
+    std::atomic<bool> gcRunning_;
+    void gcThreadLoop();
 };
 
 #endif

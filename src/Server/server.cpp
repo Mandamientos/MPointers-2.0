@@ -19,11 +19,11 @@ grpc::Status memmanServiceImpl::Get(grpc::ServerContext* context, const GetReque
 }
 
 grpc::Status memmanServiceImpl::DecreaseRefCount(grpc::ServerContext* context, const RefCountRequest* request, RefCountResponse* response) {
-    //TODO: Implement this method
+    memman_.decreaseRefCount(request->id());
     return grpc::Status::OK;
 }
 
 grpc::Status memmanServiceImpl::IncreaseRefCount(grpc::ServerContext* context, const RefCountRequest* request, RefCountResponse* response) {
-    //TODO: Implement this method
+    memman_.increaseRefCount(request->id());
     return grpc::Status::OK;
 }

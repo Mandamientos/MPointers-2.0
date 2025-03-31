@@ -8,6 +8,6 @@ void starter::startServer() {
     builder.RegisterService(&service_);
 
     server_ = builder.BuildAndStart();
-    std::cout << "Server listening on " << address_ << std::endl;
+    std::cout << "[SV] Server listening on " << address_ << std::endl;
     server_->Wait();
 }

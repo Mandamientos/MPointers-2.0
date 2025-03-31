@@ -16,18 +16,13 @@ private:
     static std::unique_ptr<MemoryManager::Stub> stub_;
     static std::shared_ptr<grpc::Channel> channel_;
 
-    void setValue(const T& value);
-    T getValue() const;
-    void increaseRefCount();
-    void decreaseRefCount();
-
 public:
 
     MPointer() : id_(-1) {} //pointer without initialization
 
     ~MPointer() { //destructor for the pointer class 
         if (id_ != -1) {
-            //decreaseRefCount();
+            decreaseRefCount();
         }
     }
 
@@ -45,7 +40,6 @@ public:
     
         CreateResponse response;
         grpc::ClientContext context;
-    
         grpc::Status status = stub_->Create(&context, request, &response);
     
         if (!status.ok()) {
@@ -56,15 +50,95 @@ public:
         return pointer;
     }
 
-    T operator*() const {
-        return getValue();
+    void setValue(const T& value) {
+        SetRequest request;
+        request.set_id(id_);
+        request.set_value(reinterpret_cast<const char*>(&value), sizeof(T));
+
+        SetResponse response;
+        grpc::ClientContext context;
+        grpc::Status status = stub_->Set(&context, request, &response);
+
+        if (!status.ok()) {
+            std::cerr << "Error setting value: " << status.error_message() << std::endl;
+        }
+    };
+
+    T getValue() const {
+        GetRequest request;
+        request.set_id(id_);
+
+        GetResponse response;
+        grpc::ClientContext context;
+        grpc::Status status = stub_->Get(&context, request, &response);
+
+        if (!status.ok()) {
+            std::cerr << "Error getting value: " << status.error_message() << std::endl;
+            return T(); // Return default value
+        }
+
+        T value;
+        std::memcpy(&value, response.value().data(), sizeof(T));
+        return value;
     }
 
-    void operator=(const T& value) {
-        setValue(value);
+    void increaseRefCount() {
+        RefCountRequest request;
+        request.set_id(id_);
+
+        RefCountResponse response;
+        grpc::ClientContext context;
+        grpc::Status status = stub_->IncreaseRefCount(&context, request, &response);
+
+        if (!status.ok()) {
+            std::cerr << "Error increasing reference count: " << status.error_message() << std::endl;
+        }
     }
 
-    MPointer<T>& operator=(const MPointer<T>& other);
+    void decreaseRefCount() {
+        RefCountRequest request;
+        request.set_id(id_);
+
+        RefCountResponse response;
+        grpc::ClientContext context;
+        grpc::Status status = stub_->DecreaseRefCount(&context, request, &response);
+
+        if (!status.ok()) {
+            std::cerr << "Error decreasing reference count: " << status.error_message() << std::endl;
+        }
+    }
+
+    class Proxy {
+        private:
+            MPointer<T>& pointer_;
+        public:
+            Proxy(MPointer<T>& pointer) : pointer_(pointer) {}
+
+            void operator=(const T& value) {
+                pointer_.setValue(value);
+            }
+
+            operator T() const {
+                return pointer_.getValue();
+            }
+    };
+
+    Proxy operator*() {
+        std::cout << "Dereferencing pointer" << std::endl;
+        return Proxy(*this);
+    }
+
+    MPointer<T>& operator=(const MPointer<T>& other) {
+        if (std::addressof(*this) != std::addressof(other)) {
+            if (id_ != -1) {
+                decreaseRefCount();
+            }
+            id_ = other.id_;
+            std::cout << "Copying pointer" << std::endl;
+            increaseRefCount();
+        }
+        return *this;
+    }
 
     int operator&() const {
         return id_;
