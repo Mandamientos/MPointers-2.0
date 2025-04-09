@@ -124,7 +124,6 @@ public:
     };
 
     Proxy operator*() {
-        std::cout << "Dereferencing pointer" << std::endl;
         return Proxy(*this);
     }
 
@@ -134,7 +133,6 @@ public:
                 decreaseRefCount();
             }
             id_ = other.id_;
-            std::cout << "Copying pointer" << std::endl;
             increaseRefCount();
         }
         return *this;
@@ -142,6 +140,10 @@ public:
 
     int operator&() const {
         return id_;
+    }
+
+    bool isNull() const {
+        return id_ == static_cast<uint32_t>(-1);
     }
 };
 

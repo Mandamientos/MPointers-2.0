@@ -9,12 +9,14 @@ grpc::Status memmanServiceImpl::Create(grpc::ServerContext* context, const Creat
 }
 
 grpc::Status memmanServiceImpl::Set(grpc::ServerContext* context, const SetRequest* request, SetResponse* response) {
-    // TODO: Implement this method
+    std::vector<uint8_t> value(request->value().begin(), request->value().end());
+    memman_.setValue(request->id(), value);
     return grpc::Status::OK;
 }
 
 grpc::Status memmanServiceImpl::Get(grpc::ServerContext* context, const GetRequest* request, GetResponse* response) {
-    //TODO: Implement this method
+    std::vector<uint8_t> value = memman_.getValue(request->id());
+    response->set_value(std::string(value.begin(), value.end()));
     return grpc::Status::OK;
 }
 

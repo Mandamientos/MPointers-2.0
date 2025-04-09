@@ -76,6 +76,33 @@ uint32_t memoryManager::createBlock(size_t size, const std::string& type) {
     return newBlock.id;
 }
 
+bool memoryManager::setValue(uint32_t id, const std::vector<uint8_t >& data) {
+    std::lock_guard<std::mutex> lock(mtx_);
+    for (auto& block : blocks_) {
+        if (block.id == id) {
+            if (data.size() > block.size) {
+                throw std::runtime_error("Data size exceeds allocated memory block.");
+            }
+            std::memcpy(heap_ + block.offset, data.data(), data.size());
+            dumpMemory();
+            return true;
+        }
+    }
+    throw std::runtime_error("Block ID not found.");
+}
+
+std::vector<uint8_t> memoryManager::getValue(uint32_t id) {
+    std::lock_guard<std::mutex> lock(mtx_);
+    for (const auto& block : blocks_) {
+        if (block.id == id) {
+            std::vector<uint8_t> data(block.size);
+            std::memcpy(data.data(), heap_ + block.offset, block.size);
+            return data;
+        }
+    }
+    throw std::runtime_error("Block ID not found.");
+}
+
 void memoryManager::increaseRefCount(uint32_t id) {
     std::lock_guard<std::mutex> lock(mtx_);
     for (auto& block : blocks_) {
@@ -120,5 +147,19 @@ void memoryManager::garbageCollector() {
             ++it;
         }
     }
+}
+
+void memoryManager::defrag() {
+    std::lock_guard<std::mutex> lock(mtx_);
+    size_t offset = 0;
+    for (auto& block : blocks_) {
+        if (block.ref_count > 0) {
+            std::memmove(heap_ + offset, heap_ + block.offset, block.size);
+            block.offset = offset;
+            offset += block.size;
+        }
+    }
+    dumpMemory();
+    std::cout << "[MM] Defragmentation completed." << std::endl;
 }
 
